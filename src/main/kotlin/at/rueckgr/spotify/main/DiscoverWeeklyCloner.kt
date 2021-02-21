@@ -2,19 +2,28 @@ package at.rueckgr.spotify.main
 
 import at.rueckgr.spotify.util.ApiFactory
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified
+import org.apache.logging.log4j.kotlin.logger
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
 fun main() {
+    val logger = logger("DiscoverWeeklyCloner")
+
     val sourcePlaylistName = "Discover Weekly"
     val destinationPlaylistName = buildDestinationName()
 
+    logger.info("Source playlist name: $sourcePlaylistName")
+    logger.info("Destination playlist name: $destinationPlaylistName")
+
     val spotifyApi = ApiFactory.create()
+
+    logger.info("Fetching playlists of user")
     val playlistsRequest = spotifyApi.listOfCurrentUsersPlaylists.build()
     val playlists = playlistsRequest.execute()
     val total = playlists.total
+    logger.info("Total playlists of user: $total")
     var playlistsProcessed = 0
     var sourcePlaylist: PlaylistSimplified? = null
     while (playlistsProcessed < total) {
@@ -23,22 +32,28 @@ fun main() {
 
         val possibleSourcePlaylist = playlistsToProcess.items.find { playlist -> playlist.name.equals(sourcePlaylistName) }
         if (possibleSourcePlaylist != null) {
+            logger.info("Found source playlist with name $sourcePlaylistName: ${possibleSourcePlaylist.id}")
             sourcePlaylist = possibleSourcePlaylist
         }
 
         if (playlistsToProcess.items.find { playlist -> playlist.name.equals(destinationPlaylistName) } != null) {
-            println("Playlist already exists")
+            logger.info("Destination playlist already exists")
             return
         }
     }
 
     val userId = spotifyApi.currentUsersProfile.build().execute().id
+    logger.info("Determined userId: $userId")
     val destinationPlaylist =
         spotifyApi.createPlaylist(userId, destinationPlaylistName).collaborative(false).public_(false).build().execute()
+    logger.info("Created destination playlist: ${destinationPlaylist.id}")
 
     val sourcePlaylistItems = spotifyApi.getPlaylistsItems(sourcePlaylist?.id).limit(50).build().execute()
+    logger.info("Fetched ${sourcePlaylistItems.items.size} items from source playlist")
+
     val playlistItems = sourcePlaylistItems.items.map { item -> item.track.uri }.toTypedArray()
     spotifyApi.addItemsToPlaylist(destinationPlaylist.id, playlistItems).build().execute()
+    logger.info("Added ${playlistItems.size} items to destination playlist")
 }
 
 private fun buildDestinationName(): String {

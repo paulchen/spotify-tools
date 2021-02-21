@@ -3,13 +3,15 @@ package at.rueckgr.spotify.util
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.SpotifyHttpManager
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
+import org.apache.logging.log4j.kotlin.Logging
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.*
 
-object ApiFactory {
+
+object ApiFactory : Logging {
     private const val PROPERTIES_FILE = "spotify.properties"
 
     private fun loadProperties(): Properties {
@@ -37,6 +39,8 @@ object ApiFactory {
         }
 
         if(!properties.containsKey(Property.ACCESS_TOKEN) || !properties.containsKey(Property.REFRESH_TOKEN)) {
+            logger.info("Access token and/or refresh token not set, must authenticate using clientId and clientSecret")
+
             val spotifyApi = SpotifyApi.Builder()
                 .setClientId(clientId)
                 .setClientSecret(clientSecret)
@@ -46,17 +50,21 @@ object ApiFactory {
                 .scope("playlist-read-private,playlist-modify-private")
                 .build()
             val uri = authorizationCodeUriRequest.execute()
+            logger.info("Authorization URL: $uri")
             println("Please visit this URL and enter the code you received: $uri")
             val authorizationCode = readLine()
 
             val authorizationCodeRequest = spotifyApi.authorizationCode(authorizationCode).build()
             val authorizationCodeCredentials = authorizationCodeRequest.execute()
 
+            logger.info("Authorization successful, access token and refresh token are available")
             saveTokens(spotifyApi, properties, authorizationCodeCredentials)
 
             return spotifyApi
         }
         else if (tokenExpiration.isBefore(LocalDateTime.now())) {
+            logger.info("Access token has expired, token refresh is required")
+
             val spotifyApi = SpotifyApi.Builder()
                 .setClientId(clientId)
                 .setClientSecret(clientSecret)
@@ -64,6 +72,7 @@ object ApiFactory {
                 .build()
             val authorizationCodeCredentials = spotifyApi.authorizationCodeRefresh().build().execute()
 
+            logger.info("Token refresh successful")
             saveTokens(spotifyApi, properties, authorizationCodeCredentials)
 
             return spotifyApi
