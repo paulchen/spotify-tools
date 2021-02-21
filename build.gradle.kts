@@ -3,15 +3,15 @@ plugins {
     `java-library`
 }
 
-group "at.rueckgr.spotify"
-version "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    compile("se.michaelthelin.spotify:spotify-web-api-java:6.5.2")
+    api("se.michaelthelin.spotify:spotify-web-api-java:6.5.2")
+    api("org.apache.logging.log4j:log4j-api:2.14.0")
+    implementation("org.apache.logging.log4j:log4j-core:2.14.0")
+    implementation("org.apache.logging.log4j:log4j-slf4j18-impl:2.14.0")
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
