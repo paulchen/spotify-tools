@@ -77,12 +77,14 @@ object ApiFactory {
 
     private fun saveTokens(spotifyApi: SpotifyApi, properties: Properties, authorizationCodeCredentials: AuthorizationCodeCredentials) {
         spotifyApi.accessToken = authorizationCodeCredentials.accessToken
-        spotifyApi.refreshToken = authorizationCodeCredentials.refreshToken
+        properties.setProperty(Property.ACCESS_TOKEN, authorizationCodeCredentials.accessToken)
+
+        if (authorizationCodeCredentials.refreshToken != null) {
+            spotifyApi.refreshToken = authorizationCodeCredentials.refreshToken
+            properties.setProperty(Property.REFRESH_TOKEN, authorizationCodeCredentials.refreshToken)
+        }
 
         val newTokenExpiration = LocalDateTime.now().toEpochSecond(OffsetDateTime.now().offset) + authorizationCodeCredentials.expiresIn
-
-        properties.setProperty(Property.ACCESS_TOKEN, authorizationCodeCredentials.accessToken)
-        properties.setProperty(Property.REFRESH_TOKEN, authorizationCodeCredentials.refreshToken)
         properties.setProperty(Property.TOKEN_EXPIRATION, newTokenExpiration.toString())
 
         saveProperties(properties)
