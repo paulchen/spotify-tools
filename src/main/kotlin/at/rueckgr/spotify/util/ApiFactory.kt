@@ -1,9 +1,9 @@
 package at.rueckgr.spotify.util
 
-import com.wrapper.spotify.SpotifyApi
-import com.wrapper.spotify.SpotifyHttpManager
-import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
 import org.apache.logging.log4j.kotlin.Logging
+import se.michaelthelin.spotify.SpotifyApi
+import se.michaelthelin.spotify.SpotifyHttpManager
+import se.michaelthelin.spotify.model_objects.credentials.AuthorizationCodeCredentials
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.time.LocalDateTime

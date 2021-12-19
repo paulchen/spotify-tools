@@ -1,8 +1,8 @@
 package at.rueckgr.spotify.main
 
 import at.rueckgr.spotify.util.ApiFactory
-import com.wrapper.spotify.model_objects.specification.PlaylistSimplified
 import org.apache.logging.log4j.kotlin.logger
+import se.michaelthelin.spotify.model_objects.specification.PlaylistSimplified
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
