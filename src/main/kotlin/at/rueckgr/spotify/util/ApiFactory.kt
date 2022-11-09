@@ -13,6 +13,7 @@ import java.util.*
 
 object ApiFactory : Logging {
     private const val PROPERTIES_FILE = "spotify.properties"
+    private const val SCOPE = "playlist-read-private,playlist-modify-private,user-read-recently-played"
 
     private fun loadProperties(): Properties {
         val properties = Properties()
@@ -38,8 +39,11 @@ object ApiFactory : Logging {
             LocalDateTime.now()
         }
 
-        if(!properties.containsKey(Property.ACCESS_TOKEN) || !properties.containsKey(Property.REFRESH_TOKEN)) {
-            logger.info("Access token and/or refresh token not set, must authenticate using clientId and clientSecret")
+        if(!properties.containsKey(Property.ACCESS_TOKEN) ||
+                !properties.containsKey(Property.REFRESH_TOKEN) ||
+                !properties.containsKey(Property.SCOPE) ||
+                properties[Property.SCOPE] != SCOPE) {
+            logger.info("Access token and/or refresh token not set or scope is wrong, must authenticate using clientId and clientSecret")
 
             val spotifyApi = SpotifyApi.Builder()
                 .setClientId(clientId)
@@ -47,7 +51,7 @@ object ApiFactory : Logging {
                 .setRedirectUri(redirectUri)
                 .build()
             val authorizationCodeUriRequest = spotifyApi.authorizationCodeUri()
-                .scope("playlist-read-private,playlist-modify-private")
+                .scope(SCOPE)
                 .build()
             val uri = authorizationCodeUriRequest.execute()
             logger.info("Authorization URL: $uri")
@@ -58,7 +62,7 @@ object ApiFactory : Logging {
             val authorizationCodeCredentials = authorizationCodeRequest.execute()
 
             logger.info("Authorization successful, access token and refresh token are available")
-            saveTokens(spotifyApi, properties, authorizationCodeCredentials)
+            saveTokens(spotifyApi, properties, authorizationCodeCredentials, SCOPE)
 
             return spotifyApi
         }
@@ -84,7 +88,7 @@ object ApiFactory : Logging {
             .build()
     }
 
-    private fun saveTokens(spotifyApi: SpotifyApi, properties: Properties, authorizationCodeCredentials: AuthorizationCodeCredentials) {
+    private fun saveTokens(spotifyApi: SpotifyApi, properties: Properties, authorizationCodeCredentials: AuthorizationCodeCredentials, scope: String? = null) {
         spotifyApi.accessToken = authorizationCodeCredentials.accessToken
         properties.setProperty(Property.ACCESS_TOKEN, authorizationCodeCredentials.accessToken)
 
@@ -95,6 +99,10 @@ object ApiFactory : Logging {
 
         val newTokenExpiration = LocalDateTime.now().toEpochSecond(OffsetDateTime.now().offset) + authorizationCodeCredentials.expiresIn
         properties.setProperty(Property.TOKEN_EXPIRATION, newTokenExpiration.toString())
+
+        if (scope != null) {
+            properties.setProperty(Property.SCOPE, scope)
+        }
 
         saveProperties(properties)
     }

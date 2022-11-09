@@ -7,5 +7,6 @@ class Property {
         const val ACCESS_TOKEN = "accessToken"
         const val REFRESH_TOKEN = "refreshToken"
         const val TOKEN_EXPIRATION = "tokenExpiration"
+        const val SCOPE = "scope"
     }
 }
