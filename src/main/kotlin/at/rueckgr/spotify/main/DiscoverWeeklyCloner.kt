@@ -8,56 +8,61 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
-fun main() {
-    val logger = logger("DiscoverWeeklyCloner")
+class DiscoverWeeklyCloner {
+    fun run() {
+        val logger = logger("DiscoverWeeklyCloner")
 
-    val sourcePlaylistName = "Discover Weekly"
-    val destinationPlaylistName = buildDestinationName()
+        val sourcePlaylistName = "Discover Weekly"
+        val destinationPlaylistName = buildDestinationName()
 
-    logger.info("Source playlist name: $sourcePlaylistName")
-    logger.info("Destination playlist name: $destinationPlaylistName")
+        logger.info("Source playlist name: $sourcePlaylistName")
+        logger.info("Destination playlist name: $destinationPlaylistName")
 
-    val spotifyApi = ApiFactory.create()
+        val spotifyApi = ApiFactory.create()
 
-    logger.info("Fetching playlists of user")
-    val playlistsRequest = spotifyApi.listOfCurrentUsersPlaylists.build()
-    val playlists = playlistsRequest.execute()
-    val total = playlists.total
-    logger.info("Total playlists of user: $total")
-    var playlistsProcessed = 0
-    var sourcePlaylist: PlaylistSimplified? = null
-    while (playlistsProcessed < total) {
-        val playlistsToProcess = spotifyApi.listOfCurrentUsersPlaylists.limit(50).offset(playlistsProcessed).build().execute()
-        playlistsProcessed += playlistsToProcess.items.size
+        logger.info("Fetching playlists of user")
+        val playlistsRequest = spotifyApi.listOfCurrentUsersPlaylists.build()
+        val playlists = playlistsRequest.execute()
+        val total = playlists.total
+        logger.info("Total playlists of user: $total")
+        var playlistsProcessed = 0
+        var sourcePlaylist: PlaylistSimplified? = null
+        while (playlistsProcessed < total) {
+            val playlistsToProcess =
+                spotifyApi.listOfCurrentUsersPlaylists.limit(50).offset(playlistsProcessed).build().execute()
+            playlistsProcessed += playlistsToProcess.items.size
 
-        val possibleSourcePlaylist = playlistsToProcess.items.find { playlist -> playlist.name.equals(sourcePlaylistName) }
-        if (possibleSourcePlaylist != null) {
-            logger.info("Found source playlist with name $sourcePlaylistName: ${possibleSourcePlaylist.id}")
-            sourcePlaylist = possibleSourcePlaylist
+            val possibleSourcePlaylist =
+                playlistsToProcess.items.find { playlist -> playlist.name.equals(sourcePlaylistName) }
+            if (possibleSourcePlaylist != null) {
+                logger.info("Found source playlist with name $sourcePlaylistName: ${possibleSourcePlaylist.id}")
+                sourcePlaylist = possibleSourcePlaylist
+            }
+
+            if (playlistsToProcess.items.find { playlist -> playlist.name.equals(destinationPlaylistName) } != null) {
+                logger.info("Destination playlist already exists")
+                return
+            }
         }
 
-        if (playlistsToProcess.items.find { playlist -> playlist.name.equals(destinationPlaylistName) } != null) {
-            logger.info("Destination playlist already exists")
-            return
-        }
+        val userId = spotifyApi.currentUsersProfile.build().execute().id
+        logger.info("Determined userId: $userId")
+        val destinationPlaylist =
+            spotifyApi.createPlaylist(userId, destinationPlaylistName).collaborative(false).public_(false).build()
+                .execute()
+        logger.info("Created destination playlist: ${destinationPlaylist.id}")
+
+        val sourcePlaylistItems = spotifyApi.getPlaylistsItems(sourcePlaylist?.id).limit(50).build().execute()
+        logger.info("Fetched ${sourcePlaylistItems.items.size} items from source playlist")
+
+        val playlistItems = sourcePlaylistItems.items.map { item -> item.track.uri }.toTypedArray()
+        spotifyApi.addItemsToPlaylist(destinationPlaylist.id, playlistItems).build().execute()
+        logger.info("Added ${playlistItems.size} items to destination playlist")
     }
 
-    val userId = spotifyApi.currentUsersProfile.build().execute().id
-    logger.info("Determined userId: $userId")
-    val destinationPlaylist =
-        spotifyApi.createPlaylist(userId, destinationPlaylistName).collaborative(false).public_(false).build().execute()
-    logger.info("Created destination playlist: ${destinationPlaylist.id}")
-
-    val sourcePlaylistItems = spotifyApi.getPlaylistsItems(sourcePlaylist?.id).limit(50).build().execute()
-    logger.info("Fetched ${sourcePlaylistItems.items.size} items from source playlist")
-
-    val playlistItems = sourcePlaylistItems.items.map { item -> item.track.uri }.toTypedArray()
-    spotifyApi.addItemsToPlaylist(destinationPlaylist.id, playlistItems).build().execute()
-    logger.info("Added ${playlistItems.size} items to destination playlist")
-}
-
-private fun buildDestinationName(): String {
-    val localDate = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-    val date = localDate.format(DateTimeFormatter.ofPattern("YYYYMMdd"))
-    return "discover-weekly-$date"
+    private fun buildDestinationName(): String {
+        val localDate = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val date = localDate.format(DateTimeFormatter.ofPattern("YYYYMMdd"))
+        return "discover-weekly-$date"
+    }
 }

@@ -23,7 +23,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("at.rueckgr.spotify.main.DiscoverWeeklyClonerKt")
+    mainClass.set("at.rueckgr.spotify.main.Main")
 }
 
 distributions {
