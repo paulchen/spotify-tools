@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
 class DiscoverWeeklyCloner {
-    fun run() {
+    fun run(): Int {
         val logger = logger("DiscoverWeeklyCloner")
 
         val sourcePlaylistName = "Discover Weekly"
@@ -33,16 +33,26 @@ class DiscoverWeeklyCloner {
             playlistsProcessed += playlistsToProcess.items.size
 
             val possibleSourcePlaylist =
-                playlistsToProcess.items.find { playlist -> playlist.name.equals(sourcePlaylistName) }
+                playlistsToProcess.items
+                    .filterNotNull()
+                    .find { playlist -> playlist.name.equals(sourcePlaylistName) }
             if (possibleSourcePlaylist != null) {
                 logger.info("Found source playlist with name $sourcePlaylistName: ${possibleSourcePlaylist.id}")
                 sourcePlaylist = possibleSourcePlaylist
             }
 
-            if (playlistsToProcess.items.find { playlist -> playlist.name.equals(destinationPlaylistName) } != null) {
+            val destinationPlaylist = playlistsToProcess.items
+                .filterNotNull()
+                .find { playlist -> playlist.name.equals(destinationPlaylistName) }
+            if (destinationPlaylist != null) {
                 logger.info("Destination playlist already exists")
-                return
+                return 0
             }
+        }
+
+        if (sourcePlaylist == null) {
+            logger.error("Playlist $sourcePlaylistName not found")
+            return 2
         }
 
         val userId = spotifyApi.currentUsersProfile.build().execute().id
@@ -52,12 +62,14 @@ class DiscoverWeeklyCloner {
                 .execute()
         logger.info("Created destination playlist: ${destinationPlaylist.id}")
 
-        val sourcePlaylistItems = spotifyApi.getPlaylistsItems(sourcePlaylist?.id).limit(50).build().execute()
+        val sourcePlaylistItems = spotifyApi.getPlaylistsItems(sourcePlaylist.id).limit(50).build().execute()
         logger.info("Fetched ${sourcePlaylistItems.items.size} items from source playlist")
 
         val playlistItems = sourcePlaylistItems.items.map { item -> item.track.uri }.toTypedArray()
         spotifyApi.addItemsToPlaylist(destinationPlaylist.id, playlistItems).build().execute()
         logger.info("Added ${playlistItems.size} items to destination playlist")
+
+        return 0
     }
 
     private fun buildDestinationName(): String {

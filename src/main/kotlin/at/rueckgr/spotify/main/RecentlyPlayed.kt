@@ -5,7 +5,7 @@ import org.apache.logging.log4j.kotlin.logger
 import java.util.*
 
 class RecentlyPlayed {
-    fun run() {
+    fun run(): Int {
         val logger = logger("RecentlyPlayed")
 
         val spotifyApi = ApiFactory.create()
@@ -29,5 +29,7 @@ class RecentlyPlayed {
 
             before = recentlyPlayedTracks.items.last().playedAt
         }
+
+        return 0
     }
 }
