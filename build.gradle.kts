@@ -31,3 +31,15 @@ application {
 distributions {
     main
 }
+
+tasks.named<DependencyUpdatesTask>("dependencyUpdates").configure {
+    gradleReleaseChannel = "current"
+}
+
+tasks.withType<DependencyUpdatesTask> {
+    rejectVersionIf {
+        candidate.version.lowercase().contains("alpha") ||
+                candidate.version.lowercase().contains("beta") ||
+                candidate.version.lowercase().contains("rc")
+    }
+}
