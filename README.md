@@ -8,7 +8,9 @@ A set of tools designed to make everyday life with Spotify easier. Based on http
 
 Currently, the following tools are available:
 
-* **DiscoveryWeeklyCloner**: Copies the contents of the "Discover Weekly" playlist to a new playlist discover-weekly-YYYYMMDD. 
+* **DiscoveryWeeklyCloner** (broken by
+[Spotify's Web API changes](https://developer.spotify.com/blog/2024-11-27-changes-to-the-web-api)
+as of 2024-11-27): Copies the contents of the "Discover Weekly" playlist to a new playlist discover-weekly-YYYYMMDD. 
 As Spotify creates that playlist every Monday, that date is always the monday.
 If a playlist with such a name already exists, nothing will be done.
 
